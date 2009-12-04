@@ -8,7 +8,7 @@
   * Calulate Polling Time. 30 millis seconds.
   * Calibrate Mic, CdS values and constain values.
   * Check CdS value graph and Light Sensor from Scratchboard value graph.
-  * Smooting values
+  * Smoothing values
   * Test resistance ABCD 
   * Why my computer can't work with Helloboard. To make troubleshoot FAQ.
   * Why soundValue changed, when I touch Helloboard.
@@ -42,20 +42,20 @@ unsigned long lastIncommingMicroSec = 0;
 uint8_t incomingByte;
 
 const int sensorChannels = 8;
-const int maxNumReadings = 15;
+const int maxNumReadings = 30;
 
 int smoothingValues[sensorChannels][maxNumReadings];
 int smoothingIndex[sensorChannels];
 int smoothingTotal[sensorChannels];
 
 void setup() {
+     setupSmoothing();  
      Serial.begin(38400);
-     setupSmoothing();
 }
 
 void setupSmoothing() {
-     for(int i =0; i< sensorChannels; i++) {
-       for(int j =0 ; j< maxNumReadings ; j++) {
+     for(int i = 0; i < sensorChannels; i++) {
+       for(int j = 0 ; j < maxNumReadings ; j++) {
          smoothingValues[i][j]=0;
        }
      smoothingTotal[i]=0;
@@ -65,26 +65,28 @@ void setupSmoothing() {
 
 void loop() {
 
-    if( Serial.available() > 0) {
-      incomingByte = Serial.read();
-#ifndef DEBUG
-      if (incomingByte == 0x01) {
-#else
-      if (incomingByte == 'a') {
-       lastIncommingMicroSec = micros();
- //      Serial.println("lastIncommingMicroSec");
-   //    Serial.println("Got Incoming Byte!");
-       
-       //Serial.println(IncomingByte, DEC); 
+#ifdef DEBUG  
+  if( Serial.available() > 0) {
+    incomingByte = Serial.read();
+
+    if (incomingByte == 'a') {
+         lastIncommingMicroSec = micros();
 #endif
         readSensors();
+ 
 #ifdef DEBUG          
-        //Serial.println(lightValue);
-        Serial.println(micros() -lastIncommingMicroSec);
+          Serial.println(micros() -lastIncommingMicroSec);
+      }
+  }
 #endif
 
+       
 #ifndef DEBUG
-
+    if( Serial.available() > 0) {
+      incomingByte = Serial.read();
+      // readSensors(); // readSensors x 7
+//          readSensors();      
+      if (incomingByte == 0x01) {
         sendFirstSecondBytes(15, 0x04);
         sendFirstSecondBytes(0, resistanceDValue);  
         sendFirstSecondBytes(1, resistanceCValue);
@@ -94,11 +96,10 @@ void loop() {
         sendFirstSecondBytes(5, lightValue);
         sendFirstSecondBytes(6, soundValue);
         sendFirstSecondBytes(7, sliderValue);
+      }  
+   }        
 #endif
 
-      }
-      
-   }
 }
 
 void readSensors() {
@@ -121,6 +122,7 @@ int readResistance(int adc) {
   int value;
   value = analogRead(adc);
   value = smoothingValue(adc, value, 5);
+  if (value ==1022) value = 1023;
   return value;
 }
 
@@ -133,24 +135,35 @@ int readSlider() {
 
 int readLight() {
   int light;
-  //for( int i =0 ; i < 50; i++) {
   light = analogRead(LightSensor);
   light = calibrateLightSensor(light);
-  light = smoothingValue(LightSensor,light, 13);
-  //}
+  light = smoothingValue(LightSensor,light, 25);
   return light;
 }
 
 int calibrateLightSensor(int light) {
-  if (light <= 512 ) {light= (int(round((26/512)*light)));}
-  else {light = int(round((1023-26)/511.0*light)-972);}
+  // mid y value = 40
+  // mid x value = 540
+  // y axis value = 1069
+
+/*
+  if (light <= 540 ) {light= (int(round((40.0/540.0)*light)));}
+  else {light = int(round((1023-40)/(1023-540)*light)-1069);}
   light = constrain(light, 0, 1023);
   return light;
-  /*
-  if (light < 50) {return (100 - light);}
-  else { light = int(round((1023-light) * ((100-50)/998.0)));}
-  return ( light);
+  
   */
+  
+  // s-curve
+    int mid = 600;
+    int mid2 = 900;
+    if ( light < mid) {
+        light = int(round((40.0/mid)*light));
+    } else if (light < mid2) {
+        light = int(round((mid2-40)/(mid2-float(mid))* light) - 1680);
+    }
+    light = constrain(light, 0, 1023);    
+    return light;
 }
 
 int smoothingValue(int channel, int value, int numReadings) {
@@ -163,19 +176,20 @@ int smoothingValue(int channel, int value, int numReadings) {
     if(smoothingIndex[channel] >=numReadings) {
       smoothingIndex[channel]=0;
     }
-    return int(round(smoothingTotal[channel] / numReadings));
+    return int(round(smoothingTotal[channel] / (numReadings)));
 }
 
 int readSound() {
   int sound;
   sound = analogRead(SoundSensor);
-  sound = smoothingValue(SoundSensor,sound, 10);
+  sound = smoothingValue(SoundSensor,sound, 25);
+  // noise ceiling 
+  if (sound < 70) {
+    sound = max(0, sound - 70);
+    return sound;
+  }
+  if (sound < 90) { return int(sound /2); }
   return sound;
-  sound = max(0, sound - 18);
-  if (sound < 50) { return int(sound/2); }
-  // noise ceiling
-  return int(25 + min( 75, round((sound - 50) * (75.0/580.0))));
-/*  return analogRead(0); */ 
 }
 
 void sendFirstSecondBytes(int channel, int value) {
@@ -194,3 +208,4 @@ void sendFirstSecondBytes(int channel, int value) {
       secondByte = lowValue;
       Serial.print(secondByte, BYTE);
 }
+
