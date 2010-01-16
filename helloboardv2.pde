@@ -5,14 +5,7 @@
  by PINY and Song Hojun.
 
  TODO
-  * Calulate Polling Time. 30 millis seconds.
-  * Calibrate Mic, CdS values and constain values.
-  * Check CdS value graph and Light Sensor from Scratchboard value graph.
-  * Smoothing values
   * Test resistance ABCD 
-  * Why my computer can't work with Helloboard. To make troubleshoot FAQ.
-  * Why soundValue changed, when I touch Helloboard.
-  * Check smoothing speed. Slider do not need smoothing.
   
 */
 
@@ -69,7 +62,7 @@ void loop() {
   if( Serial.available() > 0) {
     incomingByte = Serial.read();
 
-    if (incomingByte == 'a') {
+    if (incomingByte == 'd') {
          lastIncommingMicroSec = micros();
 #endif
         readSensors();
@@ -192,9 +185,9 @@ int readSound() {
   return sound;
 }
 
-void sendFirstSecondBytes(int channel, int value) {
-      int firstByte;
-      int secondByte;
+void sendFirstSecondBytes(byte channel, int value) {
+      byte firstByte;
+      byte secondByte;
       int highValue = value;
       int lowValue = value;
       firstByte = 1 << 7;
@@ -203,9 +196,10 @@ void sendFirstSecondBytes(int channel, int value) {
       firstByte |= channel;
       firstByte |= highValue;
 
-      Serial.print(firstByte, BYTE);  
       lowValue &= 0b01111111;
       secondByte = lowValue;
+
+      Serial.print(firstByte, BYTE);  
       Serial.print(secondByte, BYTE);
 }
 

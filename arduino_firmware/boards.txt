@@ -45,11 +45,11 @@ helloboardv2.upload.protocol=stk500
 helloboardv2.upload.maximum_size=14336
 helloboardv2.upload.speed=19200
 
-helloboardv2.bootloader.low_fuses=0xff
+helloboardv2.bootloader.low_fuses=0xfd
 helloboardv2.bootloader.high_fuses=0xdd
-helloboardv2.bootloader.extended_fuses=0x00
+helloboardv2.bootloader.extended_fuses=0xf8
 helloboardv2.bootloader.path=atmega
-helloboardv2.bootloader.file=ATmegaBOOT_168_diecimila.hex
+helloboardv2.bootloader.file=ATmegaBOOT_168_helloboardv2.hex
 helloboardv2.bootloader.unlock_bits=0x3F
 helloboardv2.bootloader.lock_bits=0x0F
 

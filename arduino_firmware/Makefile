@@ -134,6 +134,12 @@ helloboardv2: CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1'
 helloboardv2: AVR_FREQ = 7372800L 
 helloboardv2: $(PROGRAM)_helloboardv2.hex
 
+helloboardv2_isp: helloboardv2
+helloboardv2_isp: TARGET = helloboardv2
+helloboardv2_isp: HFUSE = DD
+helloboardv2_isp: LFUSE = FD
+helloboardv2_isp: EFUSE = 00
+helloboardv2_isp: isp
 
 diecimila: TARGET = diecimila
 diecimila: CFLAGS += '-DMAX_TIME_COUNT=F_CPU>>4' '-DNUM_LED_FLASHES=1'
