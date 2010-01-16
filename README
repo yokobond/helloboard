@@ -1,5 +1,18 @@
+https://sites.google.com/site/helloboardwiki/
 http://opensat.org
-
 http://piny.cc
 
-debian avr compiler 4.3.2
+
+----
+How to add Helloboard to arduino ide?
+
+ 1. Add Helloboard profile to arduino ide profile (arduino/hardware/boards.txt).
+ (Helloboard profile included in arduino_firmware/boards.txt)
+
+ 2. Open arduino ide and go to Tools/Board menu and then select 'arduino HelloboardV2'
+
+
+If you have a question about Helloboard, please contact to helloboard@piny.cc
+
+----
+ATmegaBoot_168_helloboardv2.hex was compiled under avr-gcc 4.3.2. 
