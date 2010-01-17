@@ -2,25 +2,24 @@ import serial
 
 import struct
 import time
-from threading import Thread, Event
+from threading import Thread, Event, Lock
+
 
 class ScratchBoard(Thread):
     """
-    http://docs.python.org/library/doctest.html
-    >>> s = ScratchBoard(4)
-    COM4
+    >>> s = ScratchBoard(18)
+    COM18
     >>> s.start()
+    >>> s.suspend()
+    >>> s.resume()
+    Helloboard was started to read sensors...
+    >>> time.sleep(5)
     >>> s.sensorValues
     [1023, 1023, 1023, 1023, 1023, 210, 1, 27]
-    >>> s.stop()
+    >>> s.suspend()
     >>> s.sensorValues
     [0, 0, 0, 0, 0, 0, 0, 0]
-    >>> s.restart()
-    Helloboard started to read sensors...
-    >>> s.stop()
-    >>> s.sensorValues
-    [0, 0, 0, 0, 0, 0, 0, 0]
-    >>> s.restart()
+    >>> s.resume()
     Helloboard started to read sensors...
     >>> s.sensorValues
     [1023, 1022, 1023, 1023, 1023, 228, 1, 28]
@@ -40,33 +39,43 @@ class ScratchBoard(Thread):
     27
     >>> s.readSound()
     4
+    >>> s.terminate()
     """
 
     def __init__(self, port):
         Thread.__init__(self)
         self._stop = Event()
-#        self._stop = False
+        self._suspend_lock = Lock()
+        self._terminate = False
         self.port = port
         self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]
         self.firmwareId = 0
-        self.ser = serial.Serial(port-1, 38400)        
-        print self.ser.portstr                
- 
+        self.ser = serial.Serial(port-1, 38400)
+        print self.ser.portstr
 
-    def stop(self):
-#        self.ser.close()
-        self._stop.set()
-        self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]        
-        
-    def restart(self):
-        if (not self.ser.isOpen):
+    def start(self,port):
+        Thread.start(self)
+
+    def terminate(self):
+#        self.suspend()
+        self._terminate = True
+        time.sleep(0.3)
+#        self._stop.set()
+        self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]
+        if self.ser.isOpen():
+            self.ser.close()
+
+    def suspend(self):
+        self._suspend_lock.acquire()
+
+    def resume(self):
+        self._terminate = False
+        self._suspend_lock.release()
+        if (not self.ser.isOpen()):
             self.ser = serial.Serial(self.port-1, 38400)
-        print "Helloboard started to read sensors..."
+            print "reassign serial port"
+        print "Helloboard was started to read sensors..."
 #        time.sleep(0.5)
-        self._stop.clear()        
-
-    def stopped(self):
-        return self._stop.isSet()
         
     def getChannelWithValue(self, highByte, lowByte):
         channel = (highByte & 120 ) >> 3
@@ -81,7 +90,6 @@ class ScratchBoard(Thread):
                 self.firmwareId = value
             else:
                 self.sensorValues[channel] = value
-
 
     def readResistanceD(self):
         return self.sensorValues[0]
@@ -110,13 +118,16 @@ class ScratchBoard(Thread):
 
     def run(self):
         while True:
-            if (not self._stop.isSet()):                
-                self.ser.write(struct.pack('1B',1))
-                time.sleep(0.02)
-                inBytes = struct.unpack('18B',self.ser.read(18))
-                self.setSensorValues(inBytes)
-            else:
-#                print "\nHelloboard stopped."
-                if self.ser.isOpen():
-                    self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]        
-#                    self.ser.close()
+            if self._terminate:
+                self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]
+                break
+            self._suspend_lock.acquire()
+            self._suspend_lock.release()
+            self.ser.write(struct.pack('1B',1))
+            time.sleep(0.02)
+            inBytes = struct.unpack('18B',self.ser.read(18))
+            self.setSensorValues(inBytes)
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
