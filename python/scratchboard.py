@@ -1,9 +1,7 @@
 import serial
-
 import struct
 import time
 from threading import Thread, Event, Lock
-
 
 class ScratchBoard(Thread):
     """
@@ -76,7 +74,7 @@ class ScratchBoard(Thread):
             print "reassign serial port"
         print "Helloboard was started to read sensors..."
 #        time.sleep(0.5)
-        
+
     def getChannelWithValue(self, highByte, lowByte):
         channel = (highByte & 120 ) >> 3
         value = ((highByte & 7) << 7)+(lowByte & 127)
@@ -96,7 +94,7 @@ class ScratchBoard(Thread):
 
     def readResistanceC(self):
         return self.sensorValues[1]
-    
+
     def readResistanceB(self):
         return self.sensorValues[2]
 
@@ -128,6 +126,6 @@ class ScratchBoard(Thread):
             inBytes = struct.unpack('18B',self.ser.read(18))
             self.setSensorValues(inBytes)
 
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+# if __name__ == '__main__':
+#     import doctest
+#     doctest.testmod()
