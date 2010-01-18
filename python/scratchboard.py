@@ -3,14 +3,26 @@ import struct
 import time
 from threading import Thread, Event, Lock
 
+def serialport_scan():
+    """taken from http://pyserial.sourceforge.net/examples.html"""
+    """scan for available ports. return a list of tuples (num, name)"""
+    available = []
+    for i in range(256):
+        try:
+            s = serial.Serial(i)
+            available.append( (i, s.portstr))
+            s.close()   # explicit close 'cause of delayed GC in java
+        except serial.SerialException:
+            pass
+    return available
+
 class ScratchBoard(Thread):
     """
-    >>> s = ScratchBoard(18)
+    >>> s = ScratchBoard(17)
     COM18
     >>> s.start()
     >>> s.suspend()
     >>> s.resume()
-    Helloboard was started to read sensors...
     >>> time.sleep(5)
     >>> s.sensorValues
     [1023, 1023, 1023, 1023, 1023, 210, 1, 27]
@@ -18,7 +30,6 @@ class ScratchBoard(Thread):
     >>> s.sensorValues
     [0, 0, 0, 0, 0, 0, 0, 0]
     >>> s.resume()
-    Helloboard started to read sensors...
     >>> s.sensorValues
     [1023, 1022, 1023, 1023, 1023, 228, 1, 28]
     >>> s.readButton()
@@ -48,12 +59,17 @@ class ScratchBoard(Thread):
         self.port = port
         self.sensorValues= [0, 0, 0, 0, 0, 0, 0, 0]
         self.firmwareId = 0
-        self.ser = serial.Serial(port-1, 38400)
+        self.ser = serial.Serial(port, 38400)
         print self.ser.portstr
-
-    def start(self,port):
-        Thread.start(self)
-
+        
+    def start(self):
+        try:
+            Thread.start(self)
+        except RuntimeError as e:
+            self._suspend_lock.acquire()
+            self.resume()
+            self.run()
+            
     def terminate(self):
 #        self.suspend()
         self._terminate = True
@@ -65,14 +81,14 @@ class ScratchBoard(Thread):
 
     def suspend(self):
         self._suspend_lock.acquire()
-
+        
     def resume(self):
         self._terminate = False
         self._suspend_lock.release()
         if (not self.ser.isOpen()):
-            self.ser = serial.Serial(self.port-1, 38400)
-            print "reassign serial port"
-        print "Helloboard was started to read sensors..."
+            self.ser = serial.Serial(self.port, 38400)
+#            print "reassign serial port"
+#        print "Sensor reading started..."
 #        time.sleep(0.5)
 
     def getChannelWithValue(self, highByte, lowByte):
@@ -94,7 +110,7 @@ class ScratchBoard(Thread):
 
     def readResistanceC(self):
         return self.sensorValues[1]
-
+    
     def readResistanceB(self):
         return self.sensorValues[2]
 
@@ -112,7 +128,6 @@ class ScratchBoard(Thread):
 
     def readSlide(self):
         return self.sensorValues[7]
-
 
     def run(self):
         while True:
