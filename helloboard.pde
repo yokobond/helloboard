@@ -105,7 +105,7 @@ int readLight() {
   int light;
   light = analogRead(LightSensor);
 //  light = calibrateLightSensor(light);
-  light = smoothingValue(LightSensor,light, 25);
+  light = smoothingValue(LightSensor,light, 20);
   return light;
 }
 
@@ -141,7 +141,7 @@ int readSound() {
   sound = analogRead(SoundSensor);
   sound = smoothingValue(SoundSensor,sound, 20);
   // noise ceiling 
-  if (sound < 40) { sound = 0; }
+  if (sound <= 55) { sound = 0; }
   return sound;
 }
 
