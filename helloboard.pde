@@ -53,7 +53,7 @@ void setupSmoothing() {
 
 void loop() {
     readSensors();
-       
+    
     if( Serial.available() > 0) {
         incomingByte = Serial.read();
         if (incomingByte == 0x01) {
@@ -110,8 +110,7 @@ int readLight() {
 }
 
 int calibrateLightSensor(int light) {
-
-  // make s-curve
+    // make s-curve
     int mid = 600;
     int mid2 = 900;
     if ( light < mid) {
@@ -141,25 +140,16 @@ int readSound() {
   sound = analogRead(SoundSensor);
   sound = smoothingValue(SoundSensor,sound, 20);
   // noise ceiling 
-  if (sound <= 55) { sound = 0; }
+  if (sound < 60) { sound = 0; }
   return sound;
 }
 
 void sendFirstSecondBytes(byte channel, int value) {
       byte firstByte;
       byte secondByte;
-      int highValue = value;
-      int lowValue = value;
-      firstByte = 1 << 7;
-      channel = channel << 3;
-      highValue = highValue >> 7;
-      firstByte |= channel;
-      firstByte |= highValue;
+      firstByte = (1 << 7) | (channel << 3) | (value >> 7);
+      secondByte = value & 0b01111111 ;
 
-      lowValue &= 0b01111111;
-      secondByte = lowValue;
-
-      Serial.print(firstByte, BYTE);  
-      Serial.print(secondByte, BYTE);
+      Serial.write(firstByte);  
+      Serial.write(secondByte);
 }
-
