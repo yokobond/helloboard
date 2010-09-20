@@ -139,7 +139,7 @@ int smoothingValue(int channel, int value, int numReadings) {
 int readSound() {
   int sound;
   sound = analogRead(SoundSensor);
-  sound = smoothingValue(SoundSensor,sound, 25);
+  sound = smoothingValue(SoundSensor,sound, 20);
   // noise ceiling 
   if (sound < 40) { sound = 0; }
   return sound;
