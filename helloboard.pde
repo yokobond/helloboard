@@ -104,7 +104,7 @@ int readSlider() {
 int readLight() {
   int light;
   light = analogRead(LightSensor);
-//  light = calibrateLightSensor(light);
+  light = calibrateLightSensor(light);
   light = smoothingValue(LightSensor,light, 20);
   return light;
 }
